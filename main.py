@@ -363,9 +363,11 @@ def run(args: argparse.ArgumentParser) -> None:
             loss_function,
             hg,
             labels,
-            predict_category,
-            test_dataloader,
-            test_idx,
+            predict_category=predict_category,
+            dataloader=test_dataloader,
+            eval_batch_size=args.eval_batch_size,
+            eval_num_workers=args.eval_num_workers,
+            mask=test_idx,
         )
 
         print(
