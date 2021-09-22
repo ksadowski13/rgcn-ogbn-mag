@@ -322,7 +322,7 @@ def run(args: argparse.ArgumentParser) -> None:
             f'Valid Epoch Time: {valid_time:.2f}'
         )
 
-        if 4 < epoch < 10:
+        if 1 < epoch < 5:
             train_times.append(train_time)
             valid_times.append(valid_time)
             full_times.append(full_time)
