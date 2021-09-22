@@ -4,6 +4,7 @@ from timeit import default_timer
 from typing import Callable, Tuple, Union
 
 import dgl
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -262,6 +263,10 @@ def run(args: argparse.ArgumentParser) -> None:
 
     print('## Training started ##')
 
+    train_times = []
+    valid_times = []
+    full_times = []
+
     for epoch in range(args.num_epochs):
         start = default_timer()
 
@@ -292,8 +297,9 @@ def run(args: argparse.ArgumentParser) -> None:
         )
 
         stop = default_timer()
+        full_time = stop - start
 
-        print(f'Full epoch time: {stop - start:.2f}')
+        print(f'Full epoch time: {full_time:.2f}')
 
         checkpoint.create(
             epoch,
@@ -316,12 +322,23 @@ def run(args: argparse.ArgumentParser) -> None:
             f'Valid Epoch Time: {valid_time:.2f}'
         )
 
+        if 4 < epoch < 10:
+            train_times.append(train_time)
+            valid_times.append(train_time)
+            full_times.append(full_time)
+
         if checkpoint.should_stop:
             print('## Training finished: early stopping ##')
 
             break
         elif epoch >= args.num_epochs - 1:
             print('## Training finished ##')
+
+    print(
+        f'Avg train time: {np.mean(train_times)} '
+        f'Avg valid time: {np.mean(valid_times)} '
+        f'Avg full time: {np.mean(full_times)} '
+    )
 
     print(
         f'Best Epoch: {checkpoint.best_epoch} '
