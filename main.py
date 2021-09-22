@@ -4,7 +4,6 @@ from timeit import default_timer
 from typing import Callable, Tuple, Union
 
 import dgl
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -29,13 +28,11 @@ def train(
     total_loss = 0
     total_accuracy = 0
 
-    t0 = default_timer()
-    utils.set_device(device, embedding_layer, model, loss_function)
-    t1 = default_timer()
-
-    print(f'Train copying time to device: {t1 - t0}')
-
     start = default_timer()
+
+    embedding_layer = embedding_layer.to(device)
+    model = model.to(device)
+    loss_function = loss_function.to(device)
 
     for step, (in_nodes, out_nodes, blocks) in enumerate(dataloader):
         embedding_optimizer.zero_grad()
@@ -89,13 +86,11 @@ def validate(
     embedding_layer.eval()
     model.eval()
 
-    t0 = default_timer()
-    utils.set_device(device, embedding_layer, model, loss_function)
-    t1 = default_timer()
-
-    print(f'Valid copying time to device: {t1 - t0}')
-
     start = default_timer()
+
+    embedding_layer = embedding_layer.to(device)
+    model = model.to(device)
+    loss_function = loss_function.to(device)
 
     valid_labels = labels[mask].to(device)
 
@@ -263,13 +258,7 @@ def run(args: argparse.ArgumentParser) -> None:
 
     print('## Training started ##')
 
-    train_times = []
-    valid_times = []
-    full_times = []
-
     for epoch in range(args.num_epochs):
-        start = default_timer()
-
         train_time, train_loss, train_accuracy = train(
             embedding_layer,
             model,
@@ -296,11 +285,6 @@ def run(args: argparse.ArgumentParser) -> None:
             mask=valid_idx,
         )
 
-        stop = default_timer()
-        full_time = stop - start
-
-        print(f'Full epoch time: {full_time:.2f}')
-
         checkpoint.create(
             epoch,
             train_time,
@@ -322,23 +306,12 @@ def run(args: argparse.ArgumentParser) -> None:
             f'Valid Epoch Time: {valid_time:.2f}'
         )
 
-        if 1 < epoch < 5:
-            train_times.append(train_time)
-            valid_times.append(valid_time)
-            full_times.append(full_time)
-
         if checkpoint.should_stop:
             print('## Training finished: early stopping ##')
 
             break
         elif epoch >= args.num_epochs - 1:
             print('## Training finished ##')
-
-    print(
-        f'Avg train time: {np.mean(train_times)} '
-        f'Avg valid time: {np.mean(valid_times)} '
-        f'Avg full time: {np.mean(full_times)} '
-    )
 
     print(
         f'Best Epoch: {checkpoint.best_epoch} '
@@ -380,18 +353,18 @@ def run(args: argparse.ArgumentParser) -> None:
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser('RGCN')
 
-    argparser.add_argument('--gpu-training',
-                           dest='gpu_training', action='store_true')
-    argparser.add_argument('--no-gpu-training',
-                           dest='gpu_training', action='store_false')
+    argparser.add_argument('--gpu-training', dest='gpu_training',
+                           action='store_true')
+    argparser.add_argument('--no-gpu-training', dest='gpu_training',
+                           action='store_false')
     argparser.set_defaults(gpu_training=False)
-    argparser.add_argument('--gpu-inference',
-                           dest='gpu_inference', action='store_true')
-    argparser.add_argument('--no-gpu-inference',
-                           dest='gpu_inference', action='store_false')
+    argparser.add_argument('--gpu-inference', dest='gpu_inference',
+                           action='store_true')
+    argparser.add_argument('--no-gpu-inference', dest='gpu_inference',
+                           action='store_false')
     argparser.set_defaults(gpu_inference=False)
-    argparser.add_argument('--inference-mode', default='neighbor-sampler',
-                           type=str, choices=['neighbor_sampler', 'full_neighbor_sampler', 'full_graph'])
+    argparser.add_argument('--inference-mode', default='neighbor-sampler', type=str,
+                           choices=['neighbor_sampler', 'full_neighbor_sampler', 'full_graph'])
     argparser.add_argument('--dataset', default='ogbn-mag', type=str,
                            choices=['ogbn-mag'])
     argparser.add_argument('--dataset-root', default='dataset', type=str)
@@ -408,19 +381,19 @@ if __name__ == '__main__':
     argparser.add_argument('--num-layers', default=2, type=int)
     argparser.add_argument('--norm', default='right',
                            type=str, choices=['both', 'none', 'right'])
-    argparser.add_argument('--batch-norm',
-                           dest='batch_norm', action='store_true')
-    argparser.add_argument('--no-batch-norm',
-                           dest='batch_norm', action='store_false')
+    argparser.add_argument('--batch-norm', dest='batch_norm',
+                           action='store_true')
+    argparser.add_argument('--no-batch-norm', dest='batch_norm',
+                           action='store_false')
     argparser.set_defaults(batch_norm=False)
     argparser.add_argument('--input-dropout', default=0.1, type=float)
     argparser.add_argument('--dropout', default=0.5, type=float)
-    argparser.add_argument('--activation', default='relu',
-                           type=str, choices=['leaky_relu', 'relu'])
-    argparser.add_argument('--self-loop',
-                           dest='self_loop', action='store_true')
-    argparser.add_argument('--no-self-loop',
-                           dest='self_loop', action='store_false')
+    argparser.add_argument('--activation', default='relu', type=str,
+                           choices=['leaky_relu', 'relu'])
+    argparser.add_argument('--self-loop', dest='self_loop',
+                           action='store_true')
+    argparser.add_argument('--no-self-loop', dest='self_loop',
+                           action='store_false')
     argparser.set_defaults(self_loop=True)
     argparser.add_argument('--fanouts', default='25,20', type=str)
     argparser.add_argument('--batch-size', default=1024, type=int)
@@ -430,10 +403,10 @@ if __name__ == '__main__':
     argparser.add_argument('--early-stopping-patience', default=10, type=int)
     argparser.add_argument('--early-stopping-monitor', default='loss',
                            type=str, choices=['accuracy', 'loss'])
-    argparser.add_argument('--test-validation',
-                           dest='test_validation', action='store_true')
-    argparser.add_argument('--no-test-validation',
-                           dest='test_validation', action='store_false')
+    argparser.add_argument('--test-validation', dest='test_validation',
+                           action='store_true')
+    argparser.add_argument('--no-test-validation', dest='test_validation',
+                           action='store_false')
     argparser.set_defaults(test_validation=True)
     argparser.add_argument('--seed', default=13, type=int)
 

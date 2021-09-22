@@ -218,11 +218,3 @@ def process_dataset(
         g.nodes[predict_category].data['test_mask'], as_tuple=True)[0]
 
     return dataset, g, train_idx, valid_idx, test_idx
-
-
-def set_device(
-    device: Union[str, torch.device], 
-    *args: Union[nn.Module, torch.Tensor],
-) -> None:
-    for arg in args:
-        arg = arg.to(device)
