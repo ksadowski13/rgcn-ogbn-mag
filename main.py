@@ -324,7 +324,7 @@ def run(args: argparse.ArgumentParser) -> None:
 
         if 4 < epoch < 10:
             train_times.append(train_time)
-            valid_times.append(train_time)
+            valid_times.append(valid_time)
             full_times.append(full_time)
 
         if checkpoint.should_stop:
